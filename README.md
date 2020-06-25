@@ -3,21 +3,23 @@ time-trial-viewer-frontend is used in conjunction with time-trial-viewer-fronten
 ##Getting Started
 As these 2 projects work together these instructions cover both packages:
 
->front=time-trial-viewer-frontend
->server=time-trial-viewer-server
->testroot=$PWD
->
->git clone https://github.com/mikeannett/$front.git
->cd $front
->npm install
->npm start &
+```
+front=time-trial-viewer-frontend
+server=time-trial-viewer-server
+testroot=$PWD
 
->git clone https://github.com/mikeannett/$server.git
->cd $server
->npm install
+git clone https://github.com/mikeannett/$front.git
+cd $front
+npm install
+npm start &
 
->cp athletes.example.json athletes.json
->cp events.example.json events.json
->cp .env.example .env
+cd $testroot
+git clone https://github.com/mikeannett/$server.git
+cd $server
+npm install
 
->ln -s $testroot/$front/dist static
+cp athletes.example.json athletes.json
+cp events.example.json events.json
+cp .env.example .env
+
+ln -s $testroot/$front/dist static```
