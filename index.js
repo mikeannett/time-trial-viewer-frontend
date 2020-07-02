@@ -23,7 +23,7 @@ if (module.hot) {
 }
 
 // Fetch and Render activity 
-export function fetchActivity(stravaActivityId,primary) {
+export function fetchActivity(stravaActivityId,primary, callback) {
   const xhr = new XMLHttpRequest;
   const rearrangeRoute=(stravaActivityId < 0);
   stravaActivityId=Math.abs(stravaActivityId);
@@ -83,6 +83,7 @@ export function fetchActivity(stravaActivityId,primary) {
       {
         centreAndZoom( activities[0])
       }
+      if (callback) callback();
     } 
   }
   xhr.send();

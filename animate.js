@@ -24,44 +24,21 @@ function timeString(seconds){
     return twoDigit(hh) + ':' + twoDigit(mm) + ':' + twoDigit(ss);
 }
 
-// FIXME need to remove usePoints
-// switch between OL points and [lng,lat]
-const usePoints=false;
-
 // calculate distance between 2 pointss
 function calDist(point1, point2) {
-    var p1;
-    var p2;
-    if (usePoints)
-    {
-        p1=transform(point1.getCoordinates(), "EPSG:3857", "EPSG:4326") ;
-        p2=transform(point2.getCoordinates(), "EPSG:3857", "EPSG:4326") ;
-    } else {
-        p1=point1;
-        p2=point2;
-    }
-    return getDistance(p1,p2);
+    return getDistance(point1,point2);
 }
 
 // Find the index for the closes point in an activity to the supplied point in the first half of the route
 function findStartPoint(point, activity, stopAt) {
     var besti=0;
     var bestDist=100000000.1;
-    var activityRoute;
-    if (usePoints) {
-        activityRoute = activity.activityLineString.getCoordinates();
-    } else {
-        activityRoute = activity.activityRoute;
-    }
+    const activityRoute= activity.activityRoute;
   
     for (let i=0; i<stopAt; i++)
     {
-        var p;
-        if (usePoints) {
-            p=new Point(activityRoute[i])
-        } else {
-            p=activity.activityRoute[i];
-        }
+
+        const p=activity.activityRoute[i];
         const dist=calDist(p,point);
         if (dist < bestDist)
         {
@@ -77,22 +54,14 @@ function findStartPoint(point, activity, stopAt) {
 function findEndPoint(point, activity) {
     var besti=0;
     var bestDist=100000000.1;
-    var activityRoute;
-    if (usePoints) {
-        activityRoute = activity.activityLineString.getCoordinates();
-    } else {
-        activityRoute = activity.activityRoute;
-    }
+    const activityRoute=activity.activityRoute;
+
     besti=activityRoute.length;
 
     for (let i=activityRoute.length-1; i>activityRoute.length/2; i--)
     {
-        var p;
-        if (usePoints) {
-            p=new Point(activityRoute[i])
-        } else {
-            p=activity.activityRoute[i];
-        }
+
+        const p=activity.activityRoute[i];
         const dist=calDist(p,point);
         if (dist < bestDist)
         {
@@ -114,16 +83,12 @@ function startAnimation() {
     }
 
     const primaryActivity=activities[primaryActivityIndex];
+    const thisEvent=primaryActivity.thisEvent;
     const primaryRouteCoordinates=primaryActivity.activityLineString.getCoordinates();
-    var startPoint;
-    var endPoint;
-    if (usePoints) {
-        startPoint=new Point (primaryRouteCoordinates[0]);
-        endPoint=new Point (primaryRouteCoordinates[primaryRouteCoordinates.length-1]);
-    } else {
-        startPoint=primaryActivity.activityRoute[0];
-        endPoint=primaryActivity.activityRoute[primaryActivity.activityRoute.length-1];
-    }
+
+    const startPoint=thisEvent.start;
+    const endPoint=thisEvent.end;
+
     animating = true;
 
     startButton.textContent = 'Cancel Animation';

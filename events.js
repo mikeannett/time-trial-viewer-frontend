@@ -1,24 +1,33 @@
 
-import {deleteActivities, fetchActivity} from './index.js'
+import {deleteActivities, fetchActivity,activities} from './index.js'
 import {resetColours} from './colours.js'
 import {clearAthletes} from './athlete.js'
 
 var events; 
 
+// Return true if we have a nav button with this label
+function navButtonWithLabel(label) {
+  const buttons = document. getElementsByClassName("navButton");
+  for (let b of buttons) { 
+    if (b.value == label) return true;
+  }
+  return false;
+}
+
 // display buttons for each event
 function setupButtons() {
     for (let i=0; i<events.length; i++) {
-      if (events[i].activities.length > 0)
+      if (events[i].activities.length > 0 && !navButtonWithLabel(events[i].name))
       {
         const button = document.createElement("input");
         const buttonDiv = document.getElementById('buttons');
-        const newP = buttonDiv; 
       
         button.type = "button";
         button.value = events[i].name;
+        button.className = "navButton";
         button.onclick = selectEventCallback;
         button.dataArg1=i;
-        newP.appendChild(button);
+        buttonDiv.appendChild(button);
       }
     } 
   }
@@ -38,7 +47,7 @@ function myJSONParse( data ) {
   }
 }
   // Fetch events structure
-export function fetchEvents() {
+export function fetchEvents(callback) {
     const xhr = new XMLHttpRequest;
     xhr.open('GET', '/events')
     xhr.onload = function() 
@@ -50,11 +59,15 @@ export function fetchEvents() {
         events = responseJson.events;
         setupButtons();
 
-        // select the last event and display it.
-        for (let i=events.length-1; i>-1; i--){
-          if (events[i].activities.length > 0) {
-            selectEvent(i);
-            break;
+        if (callback) callback();
+        else {
+
+          // select the last event and display it.
+          for (let i=events.length-1; i>-1; i--){
+            if (events[i].activities.length > 0) {
+              selectEvent(i);
+              break;
+            }
           }
         }
       } 
@@ -68,17 +81,41 @@ export function selectEventCallback() {
     selectEvent(eventIndex);
 }
 
+// display non primary activities
+function displayEventPart2(eventIndex) {
+  const thisEvent=events[eventIndex];
+
+  const activityIds = thisEvent.activities;
+  for (let i=1; i<activityIds.length; i++) {
+    fetchActivity(activityIds[i],false);
+  }
+}
+
+// display primary activity and when complete display the others.
+function displayEvent(eventIndex) {
+  const thisEvent=events[eventIndex];
+
+  const activityIds = thisEvent.activities;
+  fetchActivity(activityIds[0],true,() => {
+    const primaryActivityRoute = activities[0].activityRoute;
+    if (!thisEvent.start) { 
+      thisEvent.start = primaryActivityRoute[0];
+    }
+    if (!thisEvent.end) { 
+      thisEvent.end = primaryActivityRoute[ primaryActivityRoute.length-1 ];
+    }
+    activities[0].thisEvent=thisEvent;
+    displayEventPart2(eventIndex);
+  });
+}
+
 // display a selected event
 export function selectEvent(eventIndex) {
-    const thisEvent=events[eventIndex];
-  
     // remove currently displayed event 
     removeEvent();
-  
-    const activityIds = thisEvent.activities;
-    for (let i=0; i<activityIds.length; i++) {
-      fetchActivity(activityIds[i],i==0);
-    }
+
+    // Refresh the events structure and when complete display the event
+    fetchEvents( () => {displayEvent(eventIndex)} );
 }
 
 // remove currently displayed event 
