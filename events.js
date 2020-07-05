@@ -16,21 +16,28 @@ function navButtonWithLabel(label) {
 
 // display buttons for each event
 function setupButtons() {
-    for (let i=0; i<events.length; i++) {
-      if (events[i].activities.length > 0 && !navButtonWithLabel(events[i].name))
-      {
-        const button = document.createElement("input");
-        const buttonDiv = document.getElementById('buttons');
-      
-        button.type = "button";
-        button.value = events[i].name;
-        button.className = "navButton";
-        button.onclick = selectEventCallback;
-        button.dataArg1=i;
-        buttonDiv.appendChild(button);
-      }
-    } 
+  for (let i=0; i<events.length; i++) {
+    if (events[i].activities.length > 0 && !navButtonWithLabel(events[i].name))
+    {
+      const button = document.createElement("input");
+      const buttonDiv = document.getElementById('buttons');
+    
+      button.type = "button";
+      button.value = events[i].name;
+      button.className = "navButton";
+      button.onclick = selectEventCallback;
+      button.dataArg1=i;
+      buttonDiv.appendChild(button);
+    }
+  } 
+}
+
+// If not set, default end to start
+function setupEnd() {
+  for (let i=0; i<events.length; i++) {
+    if (events[i].start && !events[i].end) events[i].end=events[i].start;
   }
+}
 
 function myJSONParse( data ) {
   try {
@@ -57,6 +64,7 @@ export function fetchEvents(callback) {
         const responseJson = myJSONParse(this.responseText);
   
         events = responseJson.events;
+        setupEnd();
         setupButtons();
 
         if (callback) callback();
