@@ -8,9 +8,9 @@ import LineString from 'ol/geom/LineString';
 import {Tile as TileLayer, Vector as VectorLayer} from 'ol/layer';
 import OSM from 'ol/source/OSM';
 import VectorSource from 'ol/source/Vector';
-import {setupAnimation,cutAndShut} from './animate.js'
+import {setupAnimation,cutAndShut,stopAnimation,populateAnimationLayer, createAnimationLayer} from './animate.js'
 import {nextRouteColour,setupStyles,createAthleteSVG} from './colours.js'
-import {fetchEvents} from './events.js'
+import {fetchEvents,createMarkerLayer,getEvent} from './events.js'
 import {fetchAthletes,lookupAthlete,displayAthlete} from './athlete.js'
 
 // Hack used to avoid reload errors caused by hot loading before parcel has finshed preparing the distribution.
@@ -23,7 +23,7 @@ if (module.hot) {
 }
 
 // Fetch and Render activity 
-export function fetchActivity(stravaActivityId,primary, callback) {
+export function fetchActivity(stravaActivityId,primary, eventIndex, callback ) {
   const xhr = new XMLHttpRequest;
   const rearrangeRoute=(stravaActivityId < 0);
   stravaActivityId=Math.abs(stravaActivityId);
@@ -60,13 +60,15 @@ export function fetchActivity(stravaActivityId,primary, callback) {
 
       // we are told it is a circular route but starting from a different place
       if (rearrangeRoute){
-        let p=activities[0].activityRoute[0];
+        /*
+        const p=activities[0].activityRoute[0];
         for (let i=0; i<activities.length;i++) {
           if (activities[i].pramary) {
             p=activities[i].activityRoute[0];
             break;
           }
-        }
+        }*/
+        const p=getEvent(eventIndex).start;
         cutAndShut(p, activity);
       }
 
@@ -74,7 +76,7 @@ export function fetchActivity(stravaActivityId,primary, callback) {
       nextRouteColour(activity);
       createAthleteSVG(activity);
       
-      DisplayActivity(activity);
+      displayActivity(activity);
       displayAthlete(activity);
 
       activities.push(activity);
@@ -124,11 +126,23 @@ function extractTimes(stream) {
   return times;
 };
 
+// get the layer with this name.
+export function getLayer(name)
+{
+  let ret;
+  map.getLayers().forEach(function(layer, i) {
+    if (layer.get('name')==name)
+    {
+      ret=layer;
+    }
+  });
+  return ret;
+}
+
 // display the activity of an athlete.. namely their route on an map 
-function DisplayActivity(activity) {
+function displayActivity(activity) {
   const activityRoute = activity.activityRoute;
   const activityLineString = new LineString(activityRoute);
-  var activityLayer;
   const activityStyle = 'route'+activity.activityRouteColourIndex.toString();
   
   activityLineString.transform('EPSG:4326', 'EPSG:3857');
@@ -138,35 +152,51 @@ function DisplayActivity(activity) {
     geometry: activityLineString
   });
 
-  activityLayer = new VectorLayer({
-    source: new VectorSource({
-      features: [activityFeature]
-    }),
-    style: function(feature) {
-      return styles[feature.get('type')];
-    } 
-  });
+  if (newLayers) {
+    const activityLayer = getLayer('activity');
+    activityLayer.getSource().addFeature(activityFeature);
+  } else {
+    const activityLayer = new VectorLayer({
+      source: new VectorSource({
+        features: [activityFeature]
+      }),
+      style: function(feature) {
+        return styles[feature.get('type')];
+      } 
+    });
 
-  map.getLayers().push(activityLayer);
+    map.getLayers().push(activityLayer);
+    activity.activityLayer= activityLayer;
+    activityLayer.activity=activity;
+  }
 
   activity.activityLineString= activityLineString;
   activity.activityFeature =activityFeature;
-  activity.activityLayer= activityLayer;
   activity.activityStyle= activityStyle;
-
-  activityLayer.activity=activity;
 }
+
+
+// FIXME: remove switch
+// Switch to use the new layers model.
+export var newLayers= true;
 
 // delete Activities
 export function deleteActivities() {
   if (activities.length==0) return;
+  stopAnimation( false )
   for (let i=activities.length-1; i>-1; i--)
   {
     var activity = activities[i];
-    map.removeLayer(activity.activityLayer);
+    if (newLayers) {
+      const activityLayer = getLayer('activity');
+      activityLayer.getSource().clear();
+    } else {
+      map.removeLayer(activity.activityLayer);
+      delete activity.activityLayer;
+    }
+
     delete activity.activityRoute;
     delete activity.activityLineString;
-    delete activity.activityLayer;
     delete activity.activityFeature;
     delete activity.activityStyle;
     delete activity.activityRouteColourIndex;
@@ -177,6 +207,19 @@ export function deleteActivities() {
 // Create a map centered on Win hill
 function drawMap () {
   const winHill=new Point([ -1.721040,53.362571]).transform( 'EPSG:4326','EPSG:3857');
+  const activityLayer = new VectorLayer({
+    style: function(feature) {
+      return styles[feature.get('type')];
+    },
+    source: new VectorSource({}),
+    name: 'activity' 
+  });
+  const animationLayer = new VectorLayer({
+    updateWhileAnimating: true,
+    updateWhileInteracting: true,
+    source: new VectorSource({}),
+    name: 'animation' 
+  });
   const map = new Map({
     target: document.getElementById('map'),
     view: new View({
@@ -188,7 +231,7 @@ function drawMap () {
     layers: [
       new TileLayer({
         source: new OSM()
-      })
+      }), activityLayer, createAnimationLayer(), createMarkerLayer()
     ]
   });
   

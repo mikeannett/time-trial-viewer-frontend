@@ -1,9 +1,12 @@
 
-import {deleteActivities, fetchActivity,activities} from './index.js'
+import {deleteActivities, fetchActivity,activities, newLayers, getLayer} from './index.js'
 import {resetColours} from './colours.js'
 import {clearAthletes} from './athlete.js'
+import {Vector as VectorLayer} from 'ol/layer';
+import VectorSource from 'ol/source/Vector';
 
-var events; 
+var events;
+const markerLayerName='marker';
 
 // Return true if we have a nav button with this label
 function navButtonWithLabel(label) {
@@ -39,6 +42,26 @@ function setupEnd() {
   }
 }
 
+// display markers: start, end and CPs
+function displayMarkers(activity) {
+  const activityLayer = getLayer(markerLayerName);
+  activityLayer.getSource().addFeature(activityFeature);
+}
+
+// create marker layer.
+export function getEvent(eventIndex) {
+  return events[eventIndex];
+}
+
+// create marker layer.
+export function createMarkerLayer() {
+  return new VectorLayer({
+    source: new VectorSource({}),
+    name: markerLayerName 
+  });
+}
+
+// Safe version of JSONParse returning null structure on error and logging a more usefull message
 function myJSONParse( data ) {
   try {
     return JSON.parse(data);
@@ -95,7 +118,7 @@ function displayEventPart2(eventIndex) {
 
   const activityIds = thisEvent.activities;
   for (let i=1; i<activityIds.length; i++) {
-    fetchActivity(activityIds[i],false);
+    fetchActivity(activityIds[i],false,eventIndex);
   }
 }
 
@@ -104,7 +127,7 @@ function displayEvent(eventIndex) {
   const thisEvent=events[eventIndex];
 
   const activityIds = thisEvent.activities;
-  fetchActivity(activityIds[0],true,() => {
+  fetchActivity(activityIds[0],true, eventIndex,() => {
     const primaryActivityRoute = activities[0].activityRoute;
     if (!thisEvent.start) { 
       thisEvent.start = primaryActivityRoute[0];

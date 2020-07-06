@@ -5,9 +5,10 @@ import {Vector as VectorLayer} from 'ol/layer';
 import {Vector as VectorSource} from 'ol/source';
 import {getDistance} from 'ol/sphere';
 import {transform} from 'ol/proj';
-import {map,activities} from './index.js'
+import {map,activities,oneLayer,getLayer} from './index.js'
 
 const startButton=document.getElementById('start-animation');
+const animationLayerName='animate';
 
 // return 2 digit string with leading zeros
 function twoDigit(num){
@@ -47,7 +48,11 @@ function findStartPoint(point, activity, stopAt) {
         }
     }
     // if we didn't find anthing within 100m then return start
-    return bestDist < 100 ? besti : 0;
+    if (bestDist > 100)
+    {
+        console.log( `activity ${activity.stravaActivityId} ${bestDist}m from start`); 
+        return 0;
+    } else return besti;
 }
 
 // Find the index for the closes point in an activity to the supplied point in the second half of the route
@@ -103,14 +108,14 @@ function startAnimation() {
         activity.lastClock = new Date().getTime();
         animationCount++;
     }
-    createAnimationLayer();
+    populateAnimationLayer();
     myTimer = setInterval( moveFeatures, 100);
 
     map.render();
 }
   
 // stop endpending on ended either one or all animations
-function stopAnimation(ended,activity) {
+export function stopAnimation(ended,activity) {
     if (ended) {    
       animationCount--;
       if (animationCount > 0) return;
@@ -141,6 +146,16 @@ export function setupAnimation()
     startButton.addEventListener('click', startButtonCallback, false);
 }
 
+// create animation layer.
+export function createAnimationLayer() {
+    return new VectorLayer({
+        updateWhileAnimating: true,
+        updateWhileInteracting: true,
+        source: new VectorSource({}),
+        name: animationLayerName 
+      });
+}
+
 // Closure items used by animation code
 var animationLayer;
 var iconFeatures;
@@ -149,7 +164,7 @@ export var animating;
 var myTimer;
 
 // Create an on-top layer holding the athletes icons at their start possitions
-function createAnimationLayer() {
+function populateAnimationLayer() {
    const vectorSource = new VectorSource({});
 
    iconFeatures = [];
@@ -174,14 +189,19 @@ function createAnimationLayer() {
        iconFeatures.push(iconFeature);
    }
 
-   animationLayer = new VectorLayer({
-       source: 
-           vectorSource,
-           updateWhileAnimating: true,
-           updateWhileInteracting: true,
-   });
+   if (oneLayer) {
+    animationLayer = getLayer(animationLayerName);
+    activityLayer.addSource(activityFeature);
+   } else {
+    animationLayer = new VectorLayer({
+        source: vectorSource,
+        updateWhileAnimating: true,
+        updateWhileInteracting: true,
+    });
 
-   map.getLayers().push(animationLayer);
+    map.getLayers().push(animationLayer);
+   }
+
    map.render();
 }
 
@@ -246,8 +266,13 @@ function moveFeatures() {
 
 // remove the animation layer
 function destroyAnimationLayer() {
-     map.removeLayer(animationLayer);
-     map.render();
+    if (!oneLayer) {
+        if (animationLayer)
+            animationLayer.getSource().clear();
+    } else {
+        map.removeLayer(animationLayer);
+        map.render();
+    }
  }
 
  // Assuming the activity was circular but not started from the same point as everyone else... reorganise it so it starts and finishes at the same point as everyone else.
