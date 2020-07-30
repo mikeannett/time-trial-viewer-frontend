@@ -8,6 +8,14 @@ import VectorSource from 'ol/source/Vector';
 var events;
 const markerLayerName='marker';
 
+// Convert Long/Lat convention to Long/Lat openlayers convention
+function JSONLongLatToOpenLayers(p) {
+  const p0=p[0];
+  p[0]=p[1];
+  p[1]=p0;
+  return p;
+}
+
 // Return true if we have a nav button with this label
 function navButtonWithLabel(label) {
   const buttons = document. getElementsByClassName("navButton");
@@ -35,10 +43,16 @@ function setupButtons() {
   } 
 }
 
-// If not set, default end to start
-function setupEnd() {
+// Set up long/lat points to comply with OpenLayers conventions
+function setupPoints() {
   for (let i=0; i<events.length; i++) {
-    if (events[i].start && !events[i].end) events[i].end=events[i].start;
+    const event=events[i];
+    if (event.start) event.start=JSONLongLatToOpenLayers(event.start);
+    if (event.end) event.end=JSONLongLatToOpenLayers(event.end);
+    if (event.cps)
+      for (let i=0; i<event.cps.length;i++)
+        event.cps[i]=JSONLongLatToOpenLayers(event.cps[i]);
+    if (event.start && !event.end) event.end=event.start;
   }
 }
 
@@ -87,7 +101,7 @@ export function fetchEvents(callback) {
         const responseJson = myJSONParse(this.responseText);
   
         events = responseJson.events;
-        setupEnd();
+        setupPoints();
         setupButtons();
 
         if (callback) callback();
