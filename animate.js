@@ -7,7 +7,7 @@ import {getDistance} from 'ol/sphere';
 import {transform} from 'ol/proj';
 import {map,activities,oneLayer,getLayer} from './index.js'
 
-const startButton=document.getElementById('start-animation');
+var startButton;
 const animationLayerName='animate';
 
 // return 2 digit string with leading zeros
@@ -137,13 +137,34 @@ function startButtonCallback() {
       startAnimation();
 }
 
+function setupAnimationControls()
+{
+    const animationsDiv = document.getElementById('animations');
+    
+    const sliderLabel =  document.createElement('label');
+    sliderLabel.innerHTML = 'speed1:&nbsp;<input id="speed" type="range" min="0" max="300" step="5" value="30">';
+    animationsDiv.appendChild(sliderLabel); 
+    
+
+    startButton =  document.createElement('button');
+    startButton.id = "start-animation";
+    startButton.innerText = "Start Animation";
+    animationsDiv.appendChild(startButton); 
+    startButton.addEventListener('click', startButtonCallback, false);
+
+    const elapsedTimeDiv =  document.createElement('div');
+    elapsedTimeDiv.id="time";
+    elapsedTimeDiv.innerHTML="<p>&nbsp;</p>";
+    animationsDiv.appendChild(elapsedTimeDiv); 
+}
+
 // function to configure a startup button
 export function setupAnimation()
 {
     animating = false;
     animationCount = 0;
 
-    startButton.addEventListener('click', startButtonCallback, false);
+    setupAnimationControls();
 }
 
 // create animation layer.

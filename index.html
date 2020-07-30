@@ -27,7 +27,7 @@
       }
       .options {
         width: 20%;
-        height:100%;
+        max-height:90%;
         position: absolute;
         top: 50px;
         left: 50px;
@@ -56,6 +56,7 @@
       .athletes {
         overflow: scroll;
         font-family: "MaisonNeue", "Segoe UI", "Helvetica Neue", -apple-system, system-ui, BlinkMacSystemFont, Roboto, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        z-index: 10;
         font-size: 12px;
       }
     </style>
@@ -67,14 +68,8 @@
       </div>
       <div id="buttons" class="buttons"></div>  
       <div id="options" class="options">
-        <label for="speed">
-          speed:&nbsp;
-          <input id="speed" type="range" min="0" max="999" step="10" value="60">
-        </label>
-        <button id="start-animation">Start Animation</button>
-        <div id="time"><p>&nbsp;</p></div>
-        <div id="athletes" class="athletes"></div>  
-        
+        <div id="animations"></div>
+        <div id="athletes" class="athletes"></div>        
       </div>
       <div class="legend">mike.annett2@gmail.com</div>
     </div>
