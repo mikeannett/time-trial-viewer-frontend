@@ -43,7 +43,21 @@ function setupButtons() {
   } 
 }
 
+// Calculate the point on a line between 2 points
+function pointOnLine(point0, point1, t) {
+// Carteasian line between 2 points as defined in RFC7946
+// F(lon, lat) = (lon0 + (lon1 - lon0) * t, lat0 + (lat1 - lat0) * t)
+  const p1= (pont1) ? point1 :point0;
+  const fLon = point0[0]+(p1[0]-point0[0])*t;
+  const fLat = point0[1]+(p1[1]-point0[1])*t;
+  return [fLon,fLat];
+}
+
+
 // Set up long/lat points to comply with OpenLayers conventions
+// Openlayers complies with RFC7946 describing points as 2 member array of decimals [Long,Lat]
+// Our events.json represents points as [Lat,Long] because that is how points are presented in google/bing maps, and other tools and RFC5870
+// making it easier create data by hand
 function setupPoints() {
   for (let i=0; i<events.length; i++) {
     const event=events[i];
