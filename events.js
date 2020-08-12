@@ -2,6 +2,7 @@
 import {deleteActivities, fetchActivity,activities, newLayers, getLayer} from './index.js'
 import {resetColours} from './colours.js'
 import {clearAthletes} from './athlete.js'
+import {populateStartFrom} from './animate.js'
 import {Vector as VectorLayer} from 'ol/layer';
 import VectorSource from 'ol/source/Vector';
 
@@ -61,12 +62,22 @@ function pointOnLine(point0, point1, t) {
 function setupPoints() {
   for (let i=0; i<events.length; i++) {
     const event=events[i];
-    if (event.start) event.start=JSONLongLatToOpenLayers(event.start);
+    const points=[];
+    if (event.start)
+    {
+      event.start=JSONLongLatToOpenLayers(event.start);
+      points.push( {name:"Start", point:event.start});
+    } 
     if (event.end) event.end=JSONLongLatToOpenLayers(event.end);
     if (event.cps)
-      for (let i=0; i<event.cps.length;i++)
+      for (let i=0; i<event.cps.length;i++) {
         event.cps[i]=JSONLongLatToOpenLayers(event.cps[i]);
+        points.push( {name:"CP"+String(i+1), point:event.cps[i]});
+      }
+        
     if (event.start && !event.end) event.end=event.start;
+
+    event.points = points;
   }
 }
 
@@ -164,6 +175,7 @@ function displayEvent(eventIndex) {
       thisEvent.end = primaryActivityRoute[ primaryActivityRoute.length-1 ];
     }
     activities[0].thisEvent=thisEvent;
+    populateStartFrom(thisEvent.points);
     displayEventPart2(eventIndex);
   });
 }
