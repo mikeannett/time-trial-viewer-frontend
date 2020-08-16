@@ -20,7 +20,7 @@ export function setOnDeselectEvent(callback) {
   onDeselectEvent=callback;
 }
 
-// Convert JSON Long/Lat convention to Long/Lat openlayers convention
+// Convert JSON Lat/Long convention to Long/Lat openlayers convention
 function JSONLongLatToOpenLayers(p) {
   const p0=p[0];
   p[0]=p[1];
@@ -28,7 +28,7 @@ function JSONLongLatToOpenLayers(p) {
   return p;
 }
 
-// Convert open layers Lat/Long convention to Long/Lat JSON convention
+// Convert open layers Long/Lat convention to Lat/Long JSON convention
 function OpenLayersLongLatToJSON(p) {
   const p0=p[0];
   p[0]=p[1];
