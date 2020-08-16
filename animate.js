@@ -6,7 +6,6 @@ import {Circle as CircleStyle, Fill, Icon, Stroke, Style} from 'ol/style';
 import {Vector as VectorLayer} from 'ol/layer';
 import {Vector as VectorSource} from 'ol/source';
 import {getDistance} from 'ol/sphere';
-import {transform} from 'ol/proj';
 import {map,activities,oneLayer,getLayer} from './index.js'
 
 var startButton;
@@ -54,6 +53,16 @@ function haversine(point1, point2)
 // calculate distance between 2 points
 function calDist(point1, point2) {
     return haversine(point1,point2) /*getDistance(point1,point2);*/
+}
+
+// Calculate the point on a line between 2 points
+function pointOnLine(point0, point1, t) {
+// Carteasian line between 2 points as defined in RFC7946
+// F(lon, lat) = (lon0 + (lon1 - lon0) * t, lat0 + (lat1 - lat0) * t)
+    const p1= (pont1) ? point1 :point0;
+    const fLon = point0[0]+(p1[0]-point0[0])*t;
+    const fLat = point0[1]+(p1[1]-point0[1])*t;
+    return [fLon,fLat];
 }
 
 // Find the index for the closes point in an activity to the supplied point in the first half of the route

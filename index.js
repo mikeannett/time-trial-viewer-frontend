@@ -13,7 +13,8 @@ import XYZ from 'ol/source/XYZ';
 import VectorSource from 'ol/source/Vector';
 import {setupAnimation,cutAndShut,stopAnimation,populateAnimationLayer, createAnimationLayer} from './animate.js'
 import {nextRouteColour,setupStyles,createAthleteSVG} from './colours.js'
-import {fetchEvents,createMarkerLayer,getEvent} from './events.js'
+import {fetchEvents,getEvent} from './events.js'
+import {createMarkerLayer} from './eventMap.js'
 import {fetchAthletes,lookupAthlete,displayAthlete} from './athlete.js'
 
 import LayerSwitcher from 'ol-layerswitcher'
@@ -231,6 +232,11 @@ function drawMap () {
     type: 'base',
     source: new OSM()
   });
+  // OSMImpl.CycleMap(name)
+  //{
+  //  "url" : "http://tile2.opencyclemap.org/transport/{z}/{x}/{y}.png"
+  // }
+  // https://a.tile.thunderforest.com/cycle/15/16234/10624.png?apikey=a5dd6a2f1c934394bce6b0fb077203eb
   const arcGISEsriTopoLayer=new LayerTile({
     title: 'ArcGIS Esri Topographical',
     type: 'base',

@@ -1,13 +1,24 @@
-
-import {deleteActivities, fetchActivity,activities, newLayers, getLayer} from './index.js'
-import {resetColours} from './colours.js'
-import {clearAthletes} from './athlete.js'
-import {populateStartFrom} from './animate.js'
-import {Vector as VectorLayer} from 'ol/layer';
-import VectorSource from 'ol/source/Vector';
+import {fetchActivity,activities} from './index.js'
 
 var events;
-const markerLayerName='marker';
+
+// callback used after the events have been loaded.
+var onLoadEvents= function (event) {return};
+export function setOnLoadEvents(callback) {
+  onLoadEvents=callback;
+}
+
+// callback used after the event and primary activity have been loaded.
+var onLoadPrimary= function (event) {return};
+export function setOnLoadPrimary(callback) {
+  onLoadPrimary=callback;
+}
+
+// callback used when an event is deselect
+var onDeselectEvent= function (event) {return};
+export function setOnDeselectEvent(callback) {
+  onDeselectEvent=callback;
+}
 
 // Convert Long/Lat convention to Long/Lat openlayers convention
 function JSONLongLatToOpenLayers(p) {
@@ -16,44 +27,6 @@ function JSONLongLatToOpenLayers(p) {
   p[1]=p0;
   return p;
 }
-
-// Return true if we have a nav button with this label
-function navButtonWithLabel(label) {
-  const buttons = document. getElementsByClassName("navButton");
-  for (let b of buttons) { 
-    if (b.value == label) return true;
-  }
-  return false;
-}
-
-// display buttons for each event
-function setupButtons() {
-  for (let i=0; i<events.length; i++) {
-    if (events[i].activities.length > 0 && !navButtonWithLabel(events[i].name))
-    {
-      const button = document.createElement("input");
-      const buttonDiv = document.getElementById('buttons');
-    
-      button.type = "button";
-      button.value = events[i].name;
-      button.className = "navButton";
-      button.onclick = selectEventCallback;
-      button.dataArg1=i;
-      buttonDiv.appendChild(button);
-    }
-  } 
-}
-
-// Calculate the point on a line between 2 points
-function pointOnLine(point0, point1, t) {
-// Carteasian line between 2 points as defined in RFC7946
-// F(lon, lat) = (lon0 + (lon1 - lon0) * t, lat0 + (lat1 - lat0) * t)
-  const p1= (pont1) ? point1 :point0;
-  const fLon = point0[0]+(p1[0]-point0[0])*t;
-  const fLat = point0[1]+(p1[1]-point0[1])*t;
-  return [fLon,fLat];
-}
-
 
 // Set up long/lat points to comply with OpenLayers conventions
 // Openlayers complies with RFC7946 describing points as 2 member array of decimals [Long,Lat]
@@ -81,23 +54,8 @@ function setupPoints() {
   }
 }
 
-// display markers: start, end and CPs
-function displayMarkers(activity) {
-  const activityLayer = getLayer(markerLayerName);
-  activityLayer.getSource().addFeature(activityFeature);
-}
-
-// create marker layer.
 export function getEvent(eventIndex) {
   return events[eventIndex];
-}
-
-// create marker layer.
-export function createMarkerLayer() {
-  return new VectorLayer({
-    source: new VectorSource({}),
-    name: markerLayerName 
-  });
 }
 
 // Safe version of JSONParse returning null structure on error and logging a more usefull message
@@ -127,7 +85,7 @@ export function fetchEvents(callback) {
   
         events = responseJson.events;
         setupPoints();
-        setupButtons();
+        onLoadEvents(events);
 
         if (callback) callback();
         else {
@@ -145,14 +103,8 @@ export function fetchEvents(callback) {
     xhr.send();
 }
 
-// callback function used by event selection buttons
-export function selectEventCallback() {
-    const eventIndex=this.dataArg1;
-    selectEvent(eventIndex);
-}
-
-// display non primary activities
-function displayEventPart2(eventIndex) {
+// fetch non primary activities
+function fetchEventPart2(eventIndex) {
   const thisEvent=events[eventIndex];
 
   const activityIds = thisEvent.activities;
@@ -161,8 +113,8 @@ function displayEventPart2(eventIndex) {
   }
 }
 
-// display primary activity and when complete display the others.
-function displayEvent(eventIndex) {
+// fetch primary activity and when complete display the others.
+function fetchEvent(eventIndex) {
   const thisEvent=events[eventIndex];
 
   const activityIds = thisEvent.activities;
@@ -175,23 +127,22 @@ function displayEvent(eventIndex) {
       thisEvent.end = primaryActivityRoute[ primaryActivityRoute.length-1 ];
     }
     activities[0].thisEvent=thisEvent;
-    populateStartFrom(thisEvent.points);
-    displayEventPart2(eventIndex);
+    
+    onLoadPrimary(thisEvent);
+    fetchEventPart2(eventIndex);
   });
 }
 
-// display a selected event
+// fetch a selected event
 export function selectEvent(eventIndex) {
     // remove currently displayed event 
-    removeEvent();
+    deselectEvent();
 
-    // Refresh the events structure and when complete display the event
-    fetchEvents( () => {displayEvent(eventIndex)} );
+    // Refresh the events structure and when complete fetch activities
+    fetchEvents( () => {fetchEvent(eventIndex)} );
 }
 
-// remove currently displayed event 
-export function removeEvent() {
-    deleteActivities();
-    resetColours();
-    clearAthletes();  
+// deselect currently displayed event 
+function deselectEvent() {
+  onDeselectEvent();
 }
