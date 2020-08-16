@@ -20,8 +20,16 @@ export function setOnDeselectEvent(callback) {
   onDeselectEvent=callback;
 }
 
-// Convert Long/Lat convention to Long/Lat openlayers convention
+// Convert JSON Long/Lat convention to Long/Lat openlayers convention
 function JSONLongLatToOpenLayers(p) {
+  const p0=p[0];
+  p[0]=p[1];
+  p[1]=p0;
+  return p;
+}
+
+// Convert open layers Lat/Long convention to Long/Lat JSON convention
+function OpenLayersLongLatToJSON(p) {
   const p0=p[0];
   p[0]=p[1];
   p[1]=p0;
@@ -84,7 +92,6 @@ export function fetchEvents(callback) {
         const responseJson = myJSONParse(this.responseText);
   
         events = responseJson.events;
-        setupPoints();
         onLoadEvents(events);
 
         if (callback) callback();
@@ -121,13 +128,14 @@ function fetchEvent(eventIndex) {
   fetchActivity(activityIds[0],true, eventIndex,() => {
     const primaryActivityRoute = activities[0].activityRoute;
     if (!thisEvent.start) { 
-      thisEvent.start = primaryActivityRoute[0];
+      thisEvent.start = OpenLayersLongLatToJSON( primaryActivityRoute[0] );
     }
     if (!thisEvent.end) { 
-      thisEvent.end = primaryActivityRoute[ primaryActivityRoute.length-1 ];
+      thisEvent.end = OpenLayersLongLatToJSON( primaryActivityRoute[ primaryActivityRoute.length-1 ]);
     }
     activities[0].thisEvent=thisEvent;
-    
+
+    setupPoints();
     onLoadPrimary(thisEvent);
     fetchEventPart2(eventIndex);
   });
