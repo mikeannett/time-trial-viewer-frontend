@@ -10,7 +10,7 @@ import OSM from 'ol/source/OSM';
 import XYZ from 'ol/source/XYZ';
 import VectorSource from 'ol/source/Vector';
 
-import {setupAnimation,createAnimationLayer} from './animate.js'
+import {setupAnimation,createAnimationLayer} from './animateMap.js'
 import {setupStyles} from './colours.js'
 import {setupActivityLayer} from './activityMap.js'
 import {fetchEvents} from './events.js'

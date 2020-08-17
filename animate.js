@@ -1,34 +1,36 @@
-import playIcon from './play_512x512.png';
-import stopIcon from './stop_64x64.png';
-import Point from 'ol/geom/Point';
-import Feature from 'ol/Feature';
-import {Circle as CircleStyle, Fill, Icon, Stroke, Style} from 'ol/style';
-import {Vector as VectorLayer} from 'ol/layer';
-import {Vector as VectorSource} from 'ol/source';
 import {getDistance} from 'ol/sphere';
-import {map,oneLayer,getLayer} from './index.js'
+
 import {activities} from './activities.js'
 
-var startButton;
-export var startFromDropdown;
+export var animating=false;
+var myTimer;
+var animationCount=0;
 
-const animationLayerName='animate';
-
-// return 2 digit string with leading zeros
-function twoDigit(num){
-    if (num<10) return '0'+num;
-    return num.toString();
+// callback used after animation has been set up to start.
+var onStartAnimation;
+export function setOnStartAnimation(callback) {
+    onStartAnimation=callback;
 }
 
-// return a formatted time string hh:mm:ss
-function timeString(seconds){
-    const hh=Math.trunc(seconds / 3600);
-    const mm=Math.trunc( (seconds-hh*3600)/60);
-    const ss=seconds%60;
-  
-    return twoDigit(hh) + ':' + twoDigit(mm) + ':' + twoDigit(ss);
+// callback used when all animations are complete.
+var onStopAnimation;
+export function setOnStopAnimation(callback) {
+    onStopAnimation=callback;
 }
 
+// callback used when animation time is updated
+var onUpdateTime;
+export function setOnUpdateTime(callback) {
+    onUpdateTime=callback;
+}
+
+// callback used when animation time is updated
+var onAthleteMoved;
+export function setOnAthleteMoved(callback) {
+    onAthleteMoved=callback;
+}
+
+// Calculate the distances between 2 points
 function haversine(point1, point2)
 {
     const lat1 = point1[1];
@@ -66,8 +68,8 @@ function pointOnLine(point0, point1, t) {
     return [fLon,fLat];
 }
 
-// Find the index for the closes point in an activity to the supplied point in the first half of the route
-function findStartPoint(point, activity, startAt, stopAt) {
+// Find the index for the closest point in an activity to the supplied point in the first half of the route
+export function findStartPoint(point, activity, startAt, stopAt) {
     var besti=startAt;
     var bestDist=100000000.1;
     const activityRoute= activity.activityRoute;
@@ -91,6 +93,7 @@ function findStartPoint(point, activity, startAt, stopAt) {
     } else return besti;
 }
 
+// Find the start point for the animation for an athlete that best matches passing through all points up to pointIndex
 function findAnimationStartPoint(pointIndex, points, activity) {
     var result=findStartPoint(points[0].point, activity, 0, activity.activityRoute.length/2);
     for(var i=1; i<=pointIndex; i++) {
@@ -123,7 +126,7 @@ function findEndPoint(point, activity) {
 }
 
 // start the animation of athletes' markers
-function startAnimation() {
+export function startAnimation(pointIndex) {
     var primaryActivityIndex=0;
 
     for (let i=0; i<activities.length; i++) {
@@ -132,10 +135,9 @@ function startAnimation() {
 
     const primaryActivity=activities[primaryActivityIndex];
     const thisEvent=primaryActivity.thisEvent;
-    const primaryRouteCoordinates=primaryActivity.activityLineString.getCoordinates();
 
     var startPoint=thisEvent.start;
-    const pointIndex=startFromDropdown.value;
+    //const pointIndex=startFromDropdown.value;
     const endPoint=thisEvent.end;
 
     if (thisEvent.points.length == 0) {
@@ -145,10 +147,6 @@ function startAnimation() {
     else {
         startPoint=thisEvent.points[pointIndex].point;
     }
-
-    animating = true;
-
-    stopImage();
 
     for (let i=0; i<activities.length; i++)
     {
@@ -161,13 +159,15 @@ function startAnimation() {
         activity.lastClock = new Date().getTime();
         animationCount++;
     }
-    populateAnimationLayer();
-    myTimer = setInterval( moveFeatures, 100);
 
-    map.render();
+    // UI hook
+    if (onStartAnimation) onStartAnimation();
+
+    animating = true;
+    myTimer = setInterval( moveFeatures, 100);
 }
   
-// stop endpending on ended either one or all animations
+// stop (depending on ended) either one or all animations
 export function stopAnimation(ended,activity) {
     if (ended) {    
       animationCount--;
@@ -176,156 +176,11 @@ export function stopAnimation(ended,activity) {
   
     {
       animating = false;
-      playImage();
       clearInterval(myTimer);
-      destroyAnimationLayer();
+
+      // UI Hook
+      if (onStopAnimation) onStopAnimation();
     }
-}
-
-// start (and stop) the animation of athletes' markers
-function startButtonCallback() {
-    if (animating) 
-      stopAnimation(false);
-    else
-      startAnimation();
-}
-
-function playImage() {
-    removeChildren(startButton);
-    const startButtonImage = document.createElement('img');
-    startButtonImage.src=playIcon;
-    startButtonImage.width=9;
-    startButtonImage.height=9;
-    startButton.appendChild(startButtonImage);
-}
-
-function stopImage() {
-    removeChildren(startButton);
-    const startButtonImage = document.createElement('img');
-    startButtonImage.src=stopIcon;
-    startButtonImage.width=9;
-    startButtonImage.height=9;
-    startButton.appendChild(startButtonImage);
-}
-
-function setupAnimationControls()
-{
-    const animationsDiv = document.getElementById('animations');
-    
-    const sliderLabel =  document.createElement('label');
-    sliderLabel.innerHTML = 'speed:&nbsp;<input id="speed" type="range" min="0" max="300" step="5" value="30">';
-    animationsDiv.appendChild(sliderLabel); 
-
-    startFromDropdown = document.createElement('select');
-    startFromDropdown.id = 'startfrom';
-    animationsDiv.appendChild(startFromDropdown); 
-
-    startButton =  document.createElement('button');
-    startButton.id = "start-animation";
-    playImage();
-    animationsDiv.appendChild(startButton); 
-    startButton.addEventListener('click', startButtonCallback, false);
-
-    const elapsedTimeDiv =  document.createElement('div');
-    elapsedTimeDiv.id="time";
-    elapsedTimeDiv.innerHTML="<p>&nbsp;</p>";
-    animationsDiv.appendChild(elapsedTimeDiv); 
-}
-
-function removeChildren( element ) {
-    while (element.firstChild) {
-        element.removeChild(element.lastChild);
-    }
-
-}
-
-function addStartFromOption(name, value) {
-    const startOption=document.createElement('option');
-    startOption.innerText=name;
-    startOption.value=value;
-    startFromDropdown.appendChild(startOption);
-}
-
-export function populateStartFrom(points) {
-    removeChildren(startFromDropdown);
-    if (points.length == 0)
-    {
-        addStartFromOption( "Start", 0 );
-        return;
-    }
-
-    for (var i=0; i<points.length; i++)
-    {
-        addStartFromOption(points[i].name, i);
-    }
-}
-
-// function to configure a startup button
-export function setupAnimation()
-{
-    animating = false;
-    animationCount = 0;
-
-    setupAnimationControls();
-}
-
-// create animation layer.
-export function createAnimationLayer() {
-    return new VectorLayer({
-        updateWhileAnimating: true,
-        updateWhileInteracting: true,
-        source: new VectorSource({}),
-        name: animationLayerName 
-      });
-}
-
-// Closure items used by animation code
-var animationLayer;
-var iconFeatures;
-var animationCount;
-export var animating;
-var myTimer;
-
-// Create an on-top layer holding the athletes icons at their start possitions
-function populateAnimationLayer() {
-   const vectorSource = new VectorSource({});
-
-   iconFeatures = [];
-   for (var i=0; i<activities.length; i++)
-   {
-       const activity=activities[i];
-       const athleteSVGHTML=activity.athleteSVG.outerHTML.replace("#", "%23");  // OL doesn't like # in uri
-       const routeCoordinates=activity.activityLineString.getCoordinates();
-       const geo = routeCoordinates[activity.lastRouteIndex];
-
-       const iconFeature=new Feature({
-        geometry: new Point(geo) });
-
-       const athleteStyle =  new Style({
-           image: new Icon({
-               src: 'data:image/svg+xml;utf8,' + athleteSVGHTML 
-           })
-       });
-
-       iconFeature.setStyle(athleteStyle);
-       vectorSource.addFeature(iconFeature);
-       iconFeatures.push(iconFeature);
-   }
-
-   if (oneLayer) {
-    animationLayer = getLayer(animationLayerName);
-    activityLayer.addSource(activityFeature);
-   } else {
-    animationLayer = new VectorLayer({
-        source: vectorSource,
-        updateWhileAnimating: true,
-        updateWhileInteracting: true,
-    });
-
-    map.getLayers().push(animationLayer);
-   }
-
-   map.render();
 }
 
 // timer callback function to move athletes' markers to create an animation
@@ -333,7 +188,7 @@ function moveFeatures() {
     const speedInput = document.getElementById('speed');
     const nowClock = new Date().getTime();
 
-    for (let i=0; i<iconFeatures.length; i++) {
+    for (let i=0; i<activities.length; i++) {
         const activity = activities[i];
         const routeCoordinates=activity.activityLineString.getCoordinates();
         const routeLength=activity.StopRouteIndex;
@@ -361,16 +216,13 @@ function moveFeatures() {
             }
 
             // display how much time has passed since we started animating
-            const el=document.getElementById( 'time');
-            el.innerHTML = '<p>'+timeString(newRouteTime-activity.startRouteTime)+'</p>'
+            if (onUpdateTime) onUpdateTime(newRouteTime-activity.startRouteTime);
         
             // if enough time has passed for us to move the marker
             if (newRouteIndex > lastRouteIndex)
             {
-                const deltaX=routeCoordinates[newRouteIndex][0]-routeCoordinates[activity.lastRouteIndex][0];
-                const deltaY=routeCoordinates[newRouteIndex][1]-routeCoordinates[activity.lastRouteIndex][1];
-        
-                iconFeatures[i].getGeometry().translate(deltaX, deltaY);
+                // UI hook
+                if (onAthleteMoved) onAthleteMoved(i, routeCoordinates,newRouteIndex,activity.lastRouteIndex);
 
                 activity.lastRouteIndex=newRouteIndex
                 activity.lastRouteTime=newRouteTime;
@@ -386,38 +238,3 @@ function moveFeatures() {
     
     // console.log(new Date().getTime()- nowClock + 'ms');  // telemetry to help understand exection time so we can fine tune the timer
 }
-
-// remove the animation layer
-function destroyAnimationLayer() {
-    if (!oneLayer) {
-        if (animationLayer)
-            animationLayer.getSource().clear();
-    } else {
-        map.removeLayer(animationLayer);
-        map.render();
-    }
- }
-
- // Assuming the activity was circular but not started from the same point as everyone else... reorganise it so it starts and finishes at the same point as everyone else.
- export function cutAndShut(point, activity) {
-    const len=activity.activityRoute.length;
-    const startPoint=findStartPoint(point, activity, 0, len-1);
-
-    if (startPoint==0) return;
-
-    {
-        const ar=new Array(len);
-        let j=0;
-        for (let i=startPoint; i<len;i++) ar[j++]=activity.activityRoute[i];
-        for (let i=0; i<startPoint;i++) ar[j++]=activity.activityRoute[i];
-        activity.activityRoute=ar;
-    }
-    {
-        const t=new Array(len);
-        const delta=activity.times[len-1]-activity.times[0];
-        let j=0;
-        for (let i=startPoint; i<len;i++) t[j++]=activity.times[i];
-        for (let i=0; i<startPoint;i++) t[j++]=activity.times[i]+delta;
-        activity.times=t;
-    }
- }

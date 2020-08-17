@@ -7,7 +7,7 @@ import {Circle as CircleStyle, Fill, Icon, Stroke, Style} from 'ol/style';
 import {getLayer} from './index.js'
 import {deleteActivities} from './activities.js'
 import {setOnLoadPrimary,setOnLoadEvents,setOnDeselectEvent,selectEvent} from './events.js';
-import {populateStartFrom} from './animate.js'
+import {populateStartFrom} from './animateMap.js'
 import {resetColours} from './colours.js'
 import {clearAthletes} from './athlete.js'
 

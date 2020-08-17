@@ -1,6 +1,6 @@
-import {cutAndShut} from './animate.js'
 import {lookupAthlete} from './athlete.js'
 import {getEvent} from './events.js';
+import {findStartPoint} from './animate.js';
 
 export var activities=[];
 
@@ -108,3 +108,26 @@ export function deleteActivities() {
     return times;
   };
   
+// Assuming the activity was circular but not started from the same point as everyone else... reorganise it so it starts and finishes at the same point as everyone else.
+export function cutAndShut(point, activity) {
+  const len=activity.activityRoute.length;
+  const startPoint=findStartPoint(point, activity, 0, len-1);
+
+  if (startPoint==0) return;
+
+  {
+      const ar=new Array(len);
+      let j=0;
+      for (let i=startPoint; i<len;i++) ar[j++]=activity.activityRoute[i];
+      for (let i=0; i<startPoint;i++) ar[j++]=activity.activityRoute[i];
+      activity.activityRoute=ar;
+  }
+  {
+      const t=new Array(len);
+      const delta=activity.times[len-1]-activity.times[0];
+      let j=0;
+      for (let i=startPoint; i<len;i++) t[j++]=activity.times[i];
+      for (let i=0; i<startPoint;i++) t[j++]=activity.times[i]+delta;
+      activity.times=t;
+  }
+}
