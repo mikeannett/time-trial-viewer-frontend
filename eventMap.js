@@ -4,7 +4,8 @@ import Point from 'ol/geom/Point';
 import Feature from 'ol/Feature';
 import {Circle as CircleStyle, Fill, Icon, Stroke, Style} from 'ol/style';
 
-import {deleteActivities, getLayer} from './index.js'
+import {getLayer} from './index.js'
+import {deleteActivities} from './activities.js'
 import {setOnLoadPrimary,setOnLoadEvents,setOnDeselectEvent,selectEvent} from './events.js';
 import {populateStartFrom} from './animate.js'
 import {resetColours} from './colours.js'

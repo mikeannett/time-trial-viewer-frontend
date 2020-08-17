@@ -1,4 +1,4 @@
-import {fetchActivity,activities} from './index.js'
+import {activities,fetchActivity} from './activities.js'
 
 var events;
 

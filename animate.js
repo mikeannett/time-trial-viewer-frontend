@@ -6,7 +6,8 @@ import {Circle as CircleStyle, Fill, Icon, Stroke, Style} from 'ol/style';
 import {Vector as VectorLayer} from 'ol/layer';
 import {Vector as VectorSource} from 'ol/source';
 import {getDistance} from 'ol/sphere';
-import {map,activities,oneLayer,getLayer} from './index.js'
+import {map,oneLayer,getLayer} from './index.js'
+import {activities} from './activities.js'
 
 var startButton;
 export var startFromDropdown;
