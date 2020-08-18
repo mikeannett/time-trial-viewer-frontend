@@ -5,6 +5,8 @@ import {activities} from './activities.js'
 export var animating=false;
 var myTimer;
 var animationCount=0;
+var animationStopwatch;
+var animationLastClock;
 
 // callback used after animation has been set up to start.
 var onStartAnimation;
@@ -137,7 +139,6 @@ export function startAnimation(pointIndex) {
     const thisEvent=primaryActivity.thisEvent;
 
     var startPoint=thisEvent.start;
-    //const pointIndex=startFromDropdown.value;
     const endPoint=thisEvent.end;
 
     if (thisEvent.points.length == 0) {
@@ -148,6 +149,8 @@ export function startAnimation(pointIndex) {
         startPoint=thisEvent.points[pointIndex].point;
     }
 
+    animationLastClock=new Date().getTime();
+    animationCount=0;
     for (let i=0; i<activities.length; i++)
     {
         const activity=activities[i];
@@ -155,8 +158,7 @@ export function startAnimation(pointIndex) {
         activity.lastRouteIndex=findAnimationStartPoint(pointIndex, thisEvent.points, activity);
         activity.StopRouteIndex=findEndPoint(endPoint, activity)
         activity.startRouteTime=activity.times[activity.lastRouteIndex];
-        activity.lastRouteTime=activity.startRouteTime;
-        activity.lastClock = new Date().getTime();
+        activity.animating = true;
         animationCount++;
     }
 
@@ -164,6 +166,7 @@ export function startAnimation(pointIndex) {
     if (onStartAnimation) onStartAnimation();
 
     animating = true;
+    animationStopwatch=0;
     myTimer = setInterval( moveFeatures, 100);
 }
   
@@ -171,6 +174,7 @@ export function startAnimation(pointIndex) {
 export function stopAnimation(ended,activity) {
     if (ended) {    
       animationCount--;
+      activity.animating=false;
       if (animationCount > 0) return;
     }
   
@@ -188,25 +192,31 @@ function moveFeatures() {
     const speedInput = document.getElementById('speed');
     const nowClock = new Date().getTime();
 
+    // How much time has passed since we last did this.
+    const animationElapsedClock = nowClock - animationLastClock;
+
+    // Convert that into Animation Stopwatch seconds using the speed slider as a multiplier
+    const animationDeltaRouteSeconds = Math.round(speedInput.value * animationElapsedClock / 1000);
+    const animationNewStopwatch = animationStopwatch+animationDeltaRouteSeconds;
+
+    animationLastClock=nowClock;
+    animationStopwatch=animationNewStopwatch;
+
+    // display how much time has passed since we started animating
+    if (onUpdateTime) onUpdateTime(animationNewStopwatch);
+
     for (let i=0; i<activities.length; i++) {
         const activity = activities[i];
         const routeCoordinates=activity.activityLineString.getCoordinates();
-        const routeLength=activity.StopRouteIndex;
-        const lastRouteTime=activity.lastRouteTime;
+        const stopRouteIndex=activity.StopRouteIndex;
         const lastRouteIndex=activity.lastRouteIndex
 
-        if ((lastRouteIndex+1) < routeLength) {
-            // Work out how much the clock has advanced since we last moved the marker
-            const elapsedClock = nowClock - activity.lastClock;
-            // Convert that into seconds using the speed slider as a multiplier
-            const deltaRouteSeconds = Math.round(speedInput.value * elapsedClock / 1000);
-
-            // Work out what time this would be for our route
-            const newRouteTime=lastRouteTime+deltaRouteSeconds;
+        if (activity.animating) {
+            const newRouteTime=activity.startRouteTime+animationNewStopwatch;
     
             // Check our route to see if the any new points have been reached in this time
             var newRouteIndex=lastRouteIndex;
-            for (let j=lastRouteIndex+1; j<activity.times.length; j++)
+            for (let j=lastRouteIndex+1; j<=stopRouteIndex; j++)
             {
                 if (activity.times[j] > newRouteTime)
                 {  
@@ -215,9 +225,6 @@ function moveFeatures() {
                 newRouteIndex=j;
             }
 
-            // display how much time has passed since we started animating
-            if (onUpdateTime) onUpdateTime(newRouteTime-activity.startRouteTime);
-        
             // if enough time has passed for us to move the marker
             if (newRouteIndex > lastRouteIndex)
             {
@@ -225,12 +232,10 @@ function moveFeatures() {
                 if (onAthleteMoved) onAthleteMoved(i, routeCoordinates,newRouteIndex,activity.lastRouteIndex);
 
                 activity.lastRouteIndex=newRouteIndex
-                activity.lastRouteTime=newRouteTime;
-                activity.lastClock=nowClock;
             }
         
             // check to see if we've reached the end.
-            if ((newRouteIndex+1) >= routeLength) {
+            if (newRouteIndex >= stopRouteIndex) {
                 stopAnimation(true, activity);
             }
         }
