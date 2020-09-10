@@ -63,6 +63,15 @@ function drawMap () {
     type: 'base',
     source: new OSM()
   });
+
+  const osmTopoLayer = new LayerTile({
+    title: 'OSM Topo',
+    type: 'base',
+    visible: false,
+    source: new XYZ({
+        url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png'
+    })
+  });
   // OSMImpl.CycleMap(name)
   //{
   //  "url" : "http://tile2.opencyclemap.org/transport/{z}/{x}/{y}.png"
@@ -103,7 +112,7 @@ function drawMap () {
       maxZoom: 19
     }),
     layers: [
-      arcGISEsriTopoLayer,arcGISEsriImagaryLayer,osmLayer, activityLayer, createAnimationLayer(), createMarkerLayer()
+      arcGISEsriTopoLayer,osmTopoLayer,arcGISEsriImagaryLayer,osmLayer, activityLayer, createAnimationLayer(), createMarkerLayer()
     ]
   });
   
