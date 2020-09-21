@@ -10,6 +10,7 @@ import {setOnLoadPrimary,setOnLoadEvents,setOnDeselectEvent,selectEvent} from '.
 import {populateStartFrom} from './animateMap.js'
 import {resetColours} from './colours.js'
 import {clearAthletes} from './athlete.js'
+import {AddLevel1And2, displayEventName} from './menu.js'
 
 const markerLayerName='marker';
 
@@ -36,6 +37,7 @@ function displayMarkers(event) {
   // create marker layer.
   export function createMarkerLayer() {
     setOnLoadPrimary( (event) => { displayMarkers(event);
+        displayEventName(event.name);
         populateStartFrom(event.points);
         });
     setOnLoadEvents(setupButtons);
@@ -51,6 +53,8 @@ export function setupButtons(events) {
     for (let i=0; i<events.length; i++) {
       if (events[i].activities.length > 0 && !navButtonWithLabel(events[i].name))
       {
+        AddLevel1And2(events, i);
+        /*
         const button = document.createElement("input");
         const buttonDiv = document.getElementById('buttons');
       
@@ -59,7 +63,7 @@ export function setupButtons(events) {
         button.className = "navButton";
         button.onclick = selectEventCallback;
         button.dataArg1=i;
-        buttonDiv.appendChild(button);
+        buttonDiv.appendChild(button); */
       }
     } 
   }
