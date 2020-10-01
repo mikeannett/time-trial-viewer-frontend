@@ -71,6 +71,39 @@ function pointOnLine(point0, point1, t) {
 }
 
 // Find the index for the closest point in an activity to the supplied point in the first half of the route
+export function findStartPointCarefully(point, activity, startAt, stopAt) {
+    var besti=startAt;
+    var bestDist=100000000.1;
+    const activityRoute= activity.activityRoute;
+    var gotClose = false;
+  
+    for (let i=startAt; i<stopAt; i++)
+    {
+
+        const p=activity.activityRoute[i];
+        const dist=calDist(p,point);
+        if (dist < bestDist)
+        {
+            besti=i;
+            bestDist=dist;
+
+            if (bestDist < 100) gotClose = true;
+        } else {
+            if (gotClose && dist >100)
+            {
+                break;
+            }
+        }
+    }
+    // if we didn't find anthing within 100m then return start
+    if (bestDist > 100)
+    {
+        console.log( `activity ${activity.stravaActivityId} ${bestDist}m from start`); 
+        return startAt;
+    } else return besti;
+}
+
+// Find the index for the closest point in an activity to the supplied point in the first half of the route
 export function findStartPoint(point, activity, startAt, stopAt) {
     var besti=startAt;
     var bestDist=100000000.1;
@@ -95,11 +128,33 @@ export function findStartPoint(point, activity, startAt, stopAt) {
     } else return besti;
 }
 
+// Check the check points and mark (in closePoint[]) any that are close to each other
+function checkForCloseCPs(event) {
+    if (!event.closePoint) event.closePoint = [event.points.length];
+    for(var i=0; i<event.points.length; i++) event.closePoint[i]=false;
+
+    for(var i=0; i<event.points.length; i++) {
+        for(var j=i+1; j<event.points.length; j++) {
+            const dist=calDist(event.points[i].point,event.points[j].point);
+            if (dist <100) {
+                event.closePoint[i]=true;
+                console.log( `point ${i} is close to point ${j}`); 
+                // event.closePoint[j]=true;
+            }
+        }
+    }
+}
+
 // Find the start point for the animation for an athlete that best matches passing through all points up to pointIndex
-function findAnimationStartPoint(pointIndex, points, activity) {
-    var result=findStartPoint(points[0].point, activity, 0, activity.activityRoute.length/2);
+function findAnimationStartPoint(pointIndex, event, activity) {
+    var result=findStartPoint(event.points[0].point, activity, 0, activity.activityRoute.length/2);
     for(var i=1; i<=pointIndex; i++) {
-        result=findStartPoint(points[i].point, activity, result, activity.activityRoute.length);
+        if (event.closePoint[i])
+        {
+            result=findStartPointCarefully(event.points[i].point, activity, result, activity.activityRoute.length);
+        } else {
+            result=findStartPoint(event.points[i].point, activity, result, activity.activityRoute.length);
+        }
     }
     return result;
 }
@@ -151,11 +206,14 @@ export function startAnimation(pointIndex) {
 
     animationLastClock=new Date().getTime();
     animationCount=0;
+
+    checkForCloseCPs(thisEvent);
+
     for (let i=0; i<activities.length; i++)
     {
         const activity=activities[i];
         
-        activity.lastRouteIndex=findAnimationStartPoint(pointIndex, thisEvent.points, activity);
+        activity.lastRouteIndex=findAnimationStartPoint(pointIndex, thisEvent, activity);
         activity.StopRouteIndex=findEndPoint(endPoint, activity)
         activity.startRouteTime=activity.times[activity.lastRouteIndex];
         activity.animating = true;
