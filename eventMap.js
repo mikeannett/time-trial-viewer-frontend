@@ -22,11 +22,11 @@ function displayMarkers(event) {
   
     for( let i=0; i<points.length; i++)
     {
-      const possition=new Point(points[i].point).transform('EPSG:4326', 'EPSG:3857');
-      const pointFeature = new Feature ( {geometry: possition});
+      const position=new Point(points[i].point).transform('EPSG:4326', 'EPSG:3857');
+      const pointFeature = new Feature ( {geometry: position});
       const pointStyle =  new Style({
         image: new Icon({
-            src: 'data:image/svg+xml;utf8,<svg width="13" height="8" xmlns="http://www.w3.org/2000/svg" version="1.1"><circle cx="5" cy="5" r="4" fill="Red"></circle><text font-size="10" font-family="Verdana" x="1" y="13" fill="red">MA</text></svg>' 
+            src: 'data:image/svg+xml;utf8,<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg" version="1.1"><circle cx="5" cy="5" r="4" fill="Red"></circle></svg>' 
         })
       });
       pointFeature.setStyle(pointStyle);
