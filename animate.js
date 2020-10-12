@@ -64,7 +64,7 @@ function calDist(point1, point2) {
 function pointOnLine(point0, point1, t) {
 // Carteasian line between 2 points as defined in RFC7946
 // F(lon, lat) = (lon0 + (lon1 - lon0) * t, lat0 + (lat1 - lat0) * t)
-    const p1= (pont1) ? point1 :point0;
+    const p1= (point1) ? point1 :point0;
     const fLon = point0[0]+(p1[0]-point0[0])*t;
     const fLat = point0[1]+(p1[1]-point0[1])*t;
     return [fLon,fLat];
@@ -212,8 +212,10 @@ export function startAnimation(pointIndex) {
     for (let i=0; i<activities.length; i++)
     {
         const activity=activities[i];
+        const routeCoordinates=activity.activityLineString.getCoordinates();
         
         activity.lastRouteIndex=findAnimationStartPoint(pointIndex, thisEvent, activity);
+        activity.lastPoint=routeCoordinates[activity.lastRouteIndex];
         activity.StopRouteIndex=findEndPoint(endPoint, activity)
         activity.startRouteTime=activity.times[activity.lastRouteIndex];
         activity.animating = true;
@@ -245,6 +247,23 @@ export function stopAnimation(ended,activity) {
     }
 }
 
+// Calculate the next animation point.
+function nextPoint( activity, newRouteIndex, newRouteTime) {
+// Strava data often samples every few seconds and occasionally has longer gaps.
+// This implementation smooths this out by working out animation points between sample points.
+    const routeCoordinates=activity.activityLineString.getCoordinates();
+    const nextP = (newRouteIndex >= activity.StopRouteIndex) ? newRouteIndex : newRouteIndex + 1;
+
+    const p0=routeCoordinates[newRouteIndex];     // First sample point
+    const p1=routeCoordinates[nextP];             // Next sample point
+    const t0=activity.times[newRouteIndex];       // Time of first sample point
+    const t1=activity.times[nextP];               // Time of next sample point
+    const t= (t0==t1) ? 1 : (newRouteTime-t0)/(t1-t0);    // proportion of the time we are between t0 and t1
+    const newPoint=pointOnLine(p0,p1,t);
+
+    return newPoint;
+}
+
 // timer callback function to move athletes' markers to create an animation
 function moveFeatures() {
     const speedInput = document.getElementById('speed');
@@ -265,7 +284,7 @@ function moveFeatures() {
 
     for (let i=0; i<activities.length; i++) {
         const activity = activities[i];
-        const routeCoordinates=activity.activityLineString.getCoordinates();
+
         const stopRouteIndex=activity.StopRouteIndex;
         const lastRouteIndex=activity.lastRouteIndex
 
@@ -284,12 +303,16 @@ function moveFeatures() {
             }
 
             // if enough time has passed for us to move the marker
-            if (newRouteIndex > lastRouteIndex)
+            // if (newRouteIndex > lastRouteIndex)
             {
+                const lastPoint=activity.lastPoint;
+                // const newPoint=routeCoordinates[newRouteIndex];
+                const newPoint=nextPoint(activity, newRouteIndex, newRouteTime);
                 // UI hook
-                if (onAthleteMoved) onAthleteMoved(i, routeCoordinates,newRouteIndex,activity.lastRouteIndex);
+                if (onAthleteMoved) onAthleteMoved(i, lastPoint, newPoint);
 
-                activity.lastRouteIndex=newRouteIndex
+                activity.lastRouteIndex=newRouteIndex;
+                activity.lastPoint=newPoint;
             }
         
             // check to see if we've reached the end.

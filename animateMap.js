@@ -136,9 +136,9 @@ function updateTimeEventHandler (time) {
 }
 
 // Callback when an Athlete has been moved by the animation
-function athleteMovedEventHandler(iconIndex, routeCoordinates,newRouteIndex,lastRouteIndex) {
-    const deltaX=routeCoordinates[newRouteIndex][0]-routeCoordinates[lastRouteIndex][0];
-    const deltaY=routeCoordinates[newRouteIndex][1]-routeCoordinates[lastRouteIndex][1];
+function athleteMovedEventHandler(iconIndex, oldPoint, newPoint) {
+    const deltaX=newPoint[0]-oldPoint[0];
+    const deltaY=newPoint[1]-oldPoint[1];
 
     iconFeatures[iconIndex].getGeometry().translate(deltaX, deltaY);
 }
