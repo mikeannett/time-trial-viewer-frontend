@@ -36,9 +36,16 @@ export function fetchActivity(stravaActivityId,primary, eventIndex, callback ) {
         // Athletes with certain privacy settings will not have an Activity section in the Json document, so we won't know who the activity belongs to.
         try {
           athleteId=responseJson.activity.athleteId;
-          firstName=responseJson.activity.firstName;
         } catch(err) {
           console.log(`Activity ${stravaActivityId} has no athleteId`);
+          athleteId=0;
+          // return;
+        }
+        // We may now have activities that have no ActivityId but do have a firstName
+        try {
+          firstName=responseJson.activity.firstName;
+        } catch(err) {
+          console.log(`Activity ${stravaActivityId} has no firstName`);
           athleteId=0;
           // return;
         }

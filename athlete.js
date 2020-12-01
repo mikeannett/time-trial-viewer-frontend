@@ -30,20 +30,19 @@ export function lookupAthlete(activity) {
     const athleteId=activity.athleteId;
     var ret;
 
-    if (athleteId!=0)
+    if (athleteId && athleteId!=0)
     {
       ret=athletes[athleteId.toString()];
-      if (typeof ret == "undefined" || ret === null)
+    }
+
+    if (typeof ret == "undefined" || ret === null)
+    {
+      if (typeof activity.firstName == "undefined")
       {
-        if (typeof activity.firstName == "undefined" || activity.athleteId === null)
-        {
-          ret = unknownName(activity);
-        } else {
-          ret= activity.firstName;
-        }
+        ret = unknownName(activity);
+      } else {
+        ret= activity.firstName;
       }
-    } else {
-      ret=unknownName(activity);
     }
 
     activity.athleteName=ret;
