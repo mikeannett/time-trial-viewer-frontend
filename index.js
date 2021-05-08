@@ -3,6 +3,7 @@ import 'ol/ol.css';
 import 'ol-layerswitcher/src/ol-layerswitcher.css';
 
 import Map from 'ol/Map';
+import {ScaleLine, defaults as defaultControls} from 'ol/control';
 import View from 'ol/View';
 import Point from 'ol/geom/Point';
 import {Tile as LayerTile, Vector as LayerVector} from 'ol/layer';
@@ -57,6 +58,7 @@ function drawMap () {
     source: new VectorSource({}),
     name: 'animation' 
   });
+  const scaleControl = new ScaleLine();
   
   const osmLayer = new LayerTile({
     title: 'Open Steet Map',
@@ -103,7 +105,17 @@ function drawMap () {
         'World_Imagery/MapServer/tile/{z}/{y}/{x}',
     }),
   }); 
+  /*
+      controls: ol.control.defaults({
+      attributionOptions: /** @type {olx.control.AttributionOptions} */ /* ({
+        collapsible: false
+      })
+    }).extend([
+      scaleLineControl
+    ]),
+  */
   const map = new Map({
+    controls: defaultControls().extend([scaleControl]),
     target: document.getElementById('map'),
     view: new View({
       center: winHill.flatCoordinates,
