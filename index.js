@@ -4,6 +4,7 @@ import 'ol-layerswitcher/src/ol-layerswitcher.css';
 
 import Map from 'ol/Map';
 import {ScaleLine, defaults as defaultControls} from 'ol/control';
+import BingMaps from 'ol/source/BingMaps';
 import View from 'ol/View';
 import Point from 'ol/geom/Point';
 import {Tile as LayerTile, Vector as LayerVector} from 'ol/layer';
@@ -105,15 +106,31 @@ function drawMap () {
         'World_Imagery/MapServer/tile/{z}/{y}/{x}',
     }),
   }); 
+  const googleLayer = new LayerTile({
+    title: 'Google Image',
+    type: 'base',
+    visible: false,
+    source: new XYZ({
+      attributions:
+      'Imagery © TerraMetrics, Map data © <a href="https://www.google.com/intl/en_uk/help/terms_maps/">Google</a>',
+      url: 'http://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}'
+    })
+  });
+
   /*
-      controls: ol.control.defaults({
-      attributionOptions: /** @type {olx.control.AttributionOptions} */ /* ({
-        collapsible: false
-      })
-    }).extend([
-      scaleLineControl
-    ]),
-  */
+  const bingOSLayer = new LayerTile({
+    title: 'Bing OS',
+    type: 'base',
+    visible: false,
+      source: new BingMaps({
+        key: 'Your Bing Maps Key from http://www.bingmapsportal.com/ here',
+        imagerySet: 'OrdnanceSurvey',
+        // use maxZoom 19 to see stretched tiles instead of the BingMaps
+        // "no photos at this zoom level" tiles
+        // maxZoom: 19
+      }),
+    })
+    */
   const map = new Map({
     controls: defaultControls().extend([scaleControl]),
     target: document.getElementById('map'),
@@ -124,7 +141,7 @@ function drawMap () {
       maxZoom: 19
     }),
     layers: [
-      arcGISEsriTopoLayer,osmTopoLayer,arcGISEsriImagaryLayer,osmLayer, activityLayer, createAnimationLayer(), createMarkerLayer()
+      arcGISEsriTopoLayer,osmTopoLayer,arcGISEsriImagaryLayer,googleLayer,osmLayer, activityLayer, createAnimationLayer(), createMarkerLayer()
     ]
   });
   
